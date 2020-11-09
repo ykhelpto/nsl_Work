@@ -40,14 +40,12 @@ class warningPushThread(threading.Thread):
             allNumber = self.warningNumber + self.normalNumber
             if allNumber > int(opt.__dict__['Alarm_All_Tag_number']):  # 一分钟内如果样本帧少于60帧说明视频出现了问题,不考虑遮挡效果
                 if self.warningNumber * 100 / allNumber > int(opt.__dict__['proportion']):
-
                     if self.pushPicNumber >= int(opt.__dict__['Alarm_Push_Time']):  # 如果报警大于半个小时
                         self.pushWarning()
-
+                        pass
                     if self.pushPicNumber is 0:  # 第一次报警
                         self.pushWarning()
                     self.pushPicNumber = self.pushPicNumber + 1
-
                     self.hThread.changHeartType(1)
                     logger.info('靶标不在摄像机视线内，请检查！')
                     # data = {'msgType': 1,
@@ -114,7 +112,6 @@ class warningPushThread(threading.Thread):
     def addWarning(self):
         # if self.isLoop:
         self.warningNumber = self.warningNumber + 1
-
     pass
 
     # def isLoopeStop(self):

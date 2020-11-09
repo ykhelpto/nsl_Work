@@ -4,10 +4,10 @@ block_cipher = None
 
 
 a = Analysis(['main.py'],
-             pathex=['C:\\Users\\zzd\\Desktop\\work_pj\\nsl_work_py'],
+             pathex=['C:\\Users\\main\\Desktop\\nsl'],
              binaries=[],
              datas=[],
-             hiddenimports=['pkg_resources', 'sklearn.neighbors.typedefs', 'sklearn.utils._cython_blas', 'sklearn.neighbors.quad_tree', 'sklearn.tree', 'sklearn.tree._utils'],
+             hiddenimports=['pkg_resources', 'sklearn.neighbors.typedefs', 'sklearn.utils._cython_blas', 'sklearn.neighbors.quad_tree', 'sklearn.tree', 'sklearn.tree._utils','scipy.special.cython_special'],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],

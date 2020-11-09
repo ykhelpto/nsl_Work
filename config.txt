@@ -1,15 +1,15 @@
 # 摄像机地址
 user=admin
 pwd=simit123
-ip=172.19.152.110
+ip=172.19.152.166
 channel=1
 ip_camera_url=1cm.mp4
 # 服务器地址host=127.0.0.1
-host=172.19.152.80
+host=172.19.152.84
 port=33808
 bufsize=56000
 # 先验值
-cm_dis=73.827095
+cm_dis=356.35938
 # 图片存放文件夹名称
 file_path=test
 frame_speed=25
@@ -17,7 +17,7 @@ time_interval=60
 # socket传输一次的字节量
 length_send=56000
 #bbox 
-bbox_lsit=(917, 316, 152, 260)
+bbox_lsit=(862, 456, 133, 241)
 #配置展示帧缩放大小,实际算法处理正常大小
 narrow=1
 #起始时间和结束时间 废弃

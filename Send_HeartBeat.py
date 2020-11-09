@@ -43,13 +43,13 @@ class Send_heatbeat(threading.Thread):
                         'time': np.long(time.strftime('%Y%m%d%H%M%S')) * 1000}
                 logger.info('------上传断网心跳-------')
             else:
-                if self.heartType is 0:  # 正常心跳
+                if self.heartType == 0:  # 正常心跳
                     data = {'msgType': 1,
                             'device': '1',
                             'status': 0,
                             'time': np.long(time.strftime('%Y%m%d%H%M%S')) * 1000}
                     logger.info('------上传正常心跳-------')
-                elif self.heartType is 1:  # 设备异常(遮挡)心跳
+                elif self.heartType == 1:  # 设备异常(遮挡)心跳
 
                     data = {'msgType': 1,
                             'device': '1',

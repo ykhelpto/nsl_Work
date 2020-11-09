@@ -47,26 +47,24 @@ pushNumber = 1  # 报警次数
 '''
 
 trackChang = 0  # 位移量
-
+leftl = None
+rightl = None
 
 
 def Target_tracking(tracker, frame, left, right):
     global trackChang
+    global leftl
+    global rightl
     item = tracker.track(frame)
     message = item.getMessage()
     [((left_x, left_y), (right_x, right_y))] = message['coord']
-
+    leftl = (left_x, left_y)
+    rightl = (right_x, right_y)
     if message['msg'] == "Is tracking":
         (delta_x, delta_y) = (left_x - (left[0] / np.int(opt.__dict__['narrow'])), left_y - (left[1] / np.int(
             opt.__dict__['narrow'])))
         dis_left = np.sqrt(delta_x ** 2 + delta_y ** 2)  # 位移距离
         trackChang = dis_left
-
-        # cv2.rectangle(frame, (left_x, left_y), (right_x, right_y), (255, 0, 0), 1, 1)  # 矩形
-        # cv2.imshow('pixel_measure', frame)
-        # key = cv2.waitKey(1) & 0xFF
-        # if key == ord('\r'):
-        #     pass
         return True
     elif message['msg'] == "Not tracking":
         # logger.info('\033[1;31m请检查靶标是否在摄像机视线内\033[0m')
@@ -172,8 +170,7 @@ class OpticalFlow(threading.Thread):
             tracker = Tracker(tracker_type='KCF')
             picSize = self.rtspThrad.getFramepicSize()
             trackerFrame = cv2.resize(frame.copy(), picSize)
-            narrowBbox = (bbox_M[0] / np.int(opt.__dict__['narrow']),
-                          bbox_M[1] / np.int(opt.__dict__['narrow']),
+            narrowBbox = (bbox_M[0] / np.int(opt.__dict__['narrow']), bbox_M[1] / np.int(opt.__dict__['narrow']),
                           bbox_M[2] / np.int(opt.__dict__['narrow']),
                           bbox_M[3] / np.int(opt.__dict__['narrow']))  # 获取实际框体
             tracker.initWorking(trackerFrame, narrowBbox)
@@ -241,7 +238,7 @@ class OpticalFlow(threading.Thread):
                 if corners is not None:
                     isInitFirstFrame = True
                     if not videoIsNight:
-                        frame_gray = cv2.equalizeHist(frame_gray)
+                        frame_gray = cv2.equalizeHist(frame_gray)#.....
                     mean_dis, Tracking_Ok, bias = corners_tracking(old_frame_gray, frame_gray, corners,
                                                                    self.rtspThrad, self.left, self.right)
 
@@ -291,7 +288,7 @@ class OpticalFlow(threading.Thread):
                         logger.info('未检测到靶标,当前是报警状态，开始发送报警信息！')
                     else:
                         logger.info('未检测到靶标,靶标可能已经倾倒，开始发送报警信息！')
-                        logger.info("靶标已经移动距离:" +str(trackChang))
+                        logger.info("靶标已经移动距离:" + str(trackChang))
                         isAlarm = True
                     self.pushDeviceError(1)
                     self.pushWarning(frame)
@@ -348,7 +345,7 @@ class OpticalFlow(threading.Thread):
     '''
 
     def pushDeviceError(self, type):
-        if type is 0:  # 异常帧
+        if type == 0:  # 异常帧
             # if self.wpt is None:
             #     logger.info("检测到设备可能异常遮挡,开始进行区间时间段检测异常量...")
             #     self.wpt = warningPushThread(self.rtspThrad)
@@ -366,7 +363,7 @@ class OpticalFlow(threading.Thread):
 
             self.wpt.addWarning()
             pass
-        elif type is 1:  # 正常帧
+        elif type == 1:  # 正常帧
             # if self.wpt is not None and self.wpt.isLoopeStop():  # 正常帧
             #     self.wpt.addNormal()
             self.wpt.addNormal()
@@ -695,7 +692,7 @@ class OpticalFlow(threading.Thread):
             if not videoIsNight:
                 frame_gray = cv2.equalizeHist(frame_gray)
                 cv2.imwrite(opt.__dict__['file_path'] + '/' + 'gray_2.jpg', frame_gray)  # 白天算法对齐后的彩色帧
-            feature_params = dict(maxCorners=100, qualityLevel=0.3, minDistance=7, blockSize=7)
+            feature_params = dict(maxCorners=10, qualityLevel=0.3, minDistance=7, blockSize=7)
             p = cv2.goodFeaturesToTrack(frame_gray, mask=None, **feature_params)
             corners = self.Getcorners(frame, left, right, p)
             if corners.shape == (0,):

@@ -69,6 +69,6 @@ class PixelMeasure():
             if key == ord('\r'):
                 break
         cv2.destroyAllWindows()
-				
+
     def getpixelNumber(self):
         return self.pixelNumber

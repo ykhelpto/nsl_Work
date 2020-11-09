@@ -44,7 +44,7 @@ class RtspFrameTool(threading.Thread):
                 self.picSize = self.rtspThrad.getFramepicSize()
                 self.actualSize = self.rtspThrad.getFrameActualpicSize()
                 frame4 = nowFrame.copy()
-                if self.findcolor(frame4) is 0:
+                if self.findcolor(frame4) == 0:
                     if self.isNight:  # 如果是晚上状态 切换到白天
                         self.trt.refreshLoop()
                         self.isNight = False
@@ -52,7 +52,7 @@ class RtspFrameTool(threading.Thread):
 
                 else:
                     if not self.isNight:  # 如果是白天状态 切换到晚上
-                        if self.isNightType is -1:#初始化的时候不进行监听
+                        if self.isNightType == -1:#初始化的时候不进行监听
                             logger.info("正在启动晚上状态请稍后...")
                             self.isNight = True
                             pass
@@ -144,7 +144,7 @@ class RtspFrameTool(threading.Thread):
         # cv2.imwrite(d + '.jpg', mask)
         binary = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)[1]
         binary = cv2.dilate(binary, None, iterations=2)
-        cnts, hiera = cv2.findContours(binary.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        binary,cnts, hiera = cv2.findContours(binary.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         # cv2.imshow("lunkuo",aa)
         # cv2.waitKey(1000)
 

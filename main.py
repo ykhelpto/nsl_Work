@@ -24,7 +24,7 @@ lk_params = dict(winSize=(15, 15),
                  maxLevel=2,
                  criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
-feature_params = dict(maxCorners=500,
+feature_params = dict(maxCorners=10,
                       qualityLevel=0.3,
                       minDistance=7,
                       blockSize=7)
@@ -151,10 +151,10 @@ if __name__ == '__main__':
     logger.add(log_file_path, rotation="10 MB", compression="zip", encoding='utf-8', enqueue=True)
     logger.add(err_log_file_path, rotation="10 MB", compression="zip", encoding='utf-8', level='ERROR', enqueue=True)
 
-    ip_camera_url = BaseRTSPURL % (opt.__dict__['user'], opt.__dict__['pwd'], opt.__dict__['ip'], opt.__dict__['channel'])
-    # ip_camera_url = "C:\\Users\\zzd\\Desktop\\11.3\\video\\d_c_n.mp4"
+    # ip_camera_url = BaseRTSPURL % (opt.__dict__['user'], opt.__dict__['pwd'], opt.__dict__['ip'], opt.__dict__['channel'])
+    ip_camera_url = "172.19.152.166_01_20201102155757596.mp4"
     # ip_camera_url = "C:\\Users\\zzd\\Desktop\\10.30\\testvideo\\d2.mp4"
-    # ip_camera_url = "1cm.mp4"
+    # ip_camera_url = "172.19.152.166_01_20201102155757596.mp4"
     logger.info("启动连接:" + ip_camera_url)
     rtspThrad = RtspConnection(ip_camera_url, np.int(opt.__dict__['narrow']))  # 摄像头数据
     rtspThrad.start()
