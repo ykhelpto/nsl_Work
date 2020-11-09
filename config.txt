@@ -1,0 +1,49 @@
+# 摄像机地址
+user=admin
+pwd=simit123
+ip=172.19.152.110
+channel=1
+ip_camera_url=1cm.mp4
+# 服务器地址host=127.0.0.1
+host=172.19.152.80
+port=33808
+bufsize=56000
+# 先验值
+cm_dis=73.827095
+# 图片存放文件夹名称
+file_path=test
+frame_speed=25
+time_interval=60
+# socket传输一次的字节量
+length_send=56000
+#bbox 
+bbox_lsit=(917, 316, 152, 260)
+#配置展示帧缩放大小,实际算法处理正常大小
+narrow=1
+#起始时间和结束时间 废弃
+start_time=000000
+end_time=999999
+#日志地址 和工程同级目录
+log_path=logs
+#限制上传图片的大小 单位>KB
+local_pic_size=100
+#报警发送时间间隔 单位>min  int类型
+push_time=1
+#上报设备异常判断比例: 1分钟设备异常帧和正常帧比例
+proportion=80
+#监听框报警位移量 像素值
+push_move_data=35
+#算法识别光切换的时间延迟 单位 s
+change_night_time=2
+#晚上算法报警样本帧 废弃
+Alarm_sample=10
+#晚上算法报警可靠性  建议1~10   报警后连续有5帧都有报警状态 废弃
+Alarm_reliability=5
+#靶标实际大小  像素大小 废弃
+Target_size=381.047225
+#晚上靶标变化阀值 像素大小 废弃
+Target_change_size=10
+#报警总样本帧
+Alarm_All_Tag_number=60
+#报警上报图片时长   单位 分钟
+Alarm_Push_Time=30

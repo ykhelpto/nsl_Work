@@ -1,0 +1,156 @@
+# -*- coding: UTF-8 -*-
+'''
+ rtsp  视频处理线程
+        22帧
+
+
+
+'''
+import cv2
+import threading
+import time
+import numpy as np
+from socker import Client_send
+from loguru import logger  # 日志控件
+import colorList
+from rtsp_connection import RtspConnection
+from TypeRefreshThread import typeRefreshThread
+from config import opt
+
+
+class RtspFrameTool(threading.Thread):
+    isRunThread = True
+
+    nowRGBFrame = None
+    GrayFrame = None
+    # HSVFrame = None
+    trackerFrame = None
+    picSize = 0
+    actualSize = 0
+    isNight = False#默认是白天数据
+    isNightType=-1#默认是启动-1状态
+
+    def __init__(self, rtspThrad):
+        self.rtspThrad = rtspThrad
+        self.lock = threading.Lock()
+        self.trt = typeRefreshThread()
+        self.trt.start()
+        threading.Thread.__init__(self)
+
+    def run(self):
+        while self.isRunThread:
+            nowFrame = self.rtspThrad.getFrameData()
+            if nowFrame is not None:
+                self.picSize = self.rtspThrad.getFramepicSize()
+                self.actualSize = self.rtspThrad.getFrameActualpicSize()
+                frame4 = nowFrame.copy()
+                if self.findcolor(frame4) is 0:
+                    if self.isNight:  # 如果是晚上状态 切换到白天
+                        self.trt.refreshLoop()
+                        self.isNight = False
+                        logger.info("切换监听状态晚上>>>白天,启动视频缓冲请稍后...")
+
+                else:
+                    if not self.isNight:  # 如果是白天状态 切换到晚上
+                        if self.isNightType is -1:#初始化的时候不进行监听
+                            logger.info("正在启动晚上状态请稍后...")
+                            self.isNight = True
+                            pass
+                        else:
+                            self.trt.refreshLoop()
+                            self.isNight = True
+                            logger.info("切换监听状态白天>>>晚上,启动视频缓冲请稍后...")
+
+                if self.trt.getRefreshISLoop():  # 是否在等待视频帧稳定中
+                    self.lock.acquire()
+                    self.nowRGBFrame = None
+                    self.GrayFrame = None
+                    # self.HSVFrame = None
+                    self.lock.release()
+                    pass
+                else:
+                    self.lock.acquire()
+                    frame0 = nowFrame.copy()
+                    self.nowRGBFrame=frame0
+                    frame1 = nowFrame.copy()
+                    self.GrayFrame = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+                    # frame2 = nowFrame.copy()
+                    # self.HSVFrame = cv2.cvtColor(frame2, cv2.COLOR_BGR2HSV)
+                    frame3 = nowFrame.copy()
+                    self.trackerFrame = cv2.resize(frame3, self.picSize)
+                    self.lock.release()
+                    pass
+
+                pass
+            else:
+                self.lock.acquire()
+                self.nowRGBFrame = None
+                self.GrayFrame = None
+                # self.HSVFrame = None
+                self.trackerFrame=None
+                self.lock.release()
+        logger.error('视频流工具帧线程关闭...')
+
+    '''
+	    线程控制器
+    '''
+
+    def stopThread(self):
+        self.isRunThread = False
+
+    '''
+	    获取线程缓存的最新的帧RGB图片
+    '''
+
+    def getFrameData(self):
+        return self.nowRGBFrame
+
+    '''
+    获取最新的Gray图片
+    '''
+
+    def getGrayFrameData(self):
+        return self.GrayFrame
+    #
+    # def getHSVFrameData(self):
+    #     return self.HSVFrame
+
+    def getTrackerFrameData(self):
+        return self.trackerFrame
+
+    # 注意这里是建议展示缩放尺寸比例
+    def getFramepicSize(self):
+        return self.picSize
+
+    # 实际展示尺寸
+    def getFrameActualpicSize(self):
+        return self.actualSize
+
+    def videoIsNight(self):
+        return self.isNight
+
+    # 当前视频状态
+    def findcolor(self, cutframe):
+        night = 0
+        color_dict = colorList.getColorList()
+
+        hsv = cv2.cvtColor(cutframe, cv2.COLOR_BGR2HSV)
+        maxsum = 0
+        color = 'None'
+        d = 'red'
+        image = cutframe.copy()
+        mask = cv2.inRange(hsv, color_dict[d][0], color_dict[d][1])
+
+        # cv2.imwrite(d + '.jpg', mask)
+        binary = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)[1]
+        binary = cv2.dilate(binary, None, iterations=2)
+        cnts, hiera = cv2.findContours(binary.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # cv2.imshow("lunkuo",aa)
+        # cv2.waitKey(1000)
+
+        sum = 0
+        for c in cnts:
+            sum += cv2.contourArea(c)
+        if sum < 100:
+            night = 1
+        return night
