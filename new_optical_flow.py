@@ -4,74 +4,43 @@
 新增需求：要求多线程读取图片，以防出现实时读取延时问题
 '''
 
-import io
 import cv2
 import threading
 import numpy as np
 import time
 import math
-from socker import Client_send
 from config import opt
 from new_socket_connection import Socket_Send_Pic
-from sklearn.cluster import KMeans
 from loguru import logger  # 日志控件
 from WarningPushThread import warningPushThread
 from kcf import Tracker
+import datetime
 
 isAlarm = False  # 算法的报警状态
 isArrest = False  # 算法的报警状态
 pushNumber = 1  # 报警次数
 
+
 # 监听框移动状态
-'''
-                # refer_left, refer_right = Target_tracking(self.tracker, trackerFrame, self.left,
-                #                                           self.right)  # 目标追踪放在这里，是为了检测图像中是否存在目标
-
-                # (x1, y1) = refer_left
-                # (x2, y2) = refer_right
-                # (xS, yS) = self.rtspThrad.getFramepicSize()  # 这里比对的是缩放后的尺寸框
-                # maxThis = 0
-                # if x1 > x2:
-                #     maxThis = x1
-                #     x1 = x2
-                #     x2 = maxThis
-                # if y1 > y2:
-                #     maxThis = y1
-                #     y1 = y2
-                #     y2 = maxThis
-                # rectXSize = x2 - x1
-                # rectYSize = y2 - y1
-                # 设定监控包含框体可以完全移除画面的情况
-                # if x1 > - rectXSize and x2 < (xS + rectXSize) and y1 > -rectYSize and y2 < (yS + rectYSize):
-
-'''
-
-trackChang = 0  # 位移量
-
-
-
 def Target_tracking(tracker, frame, left, right):
-    global trackChang
+    leftl = None
+    rightl = None
     item = tracker.track(frame)
     message = item.getMessage()
     [((left_x, left_y), (right_x, right_y))] = message['coord']
 
     if message['msg'] == "Is tracking":
-        (delta_x, delta_y) = (left_x - (left[0] / np.int(opt.__dict__['narrow'])), left_y - (left[1] / np.int(
-            opt.__dict__['narrow'])))
-        dis_left = np.sqrt(delta_x ** 2 + delta_y ** 2)  # 位移距离
-        trackChang = dis_left
-
-        # cv2.rectangle(frame, (left_x, left_y), (right_x, right_y), (255, 0, 0), 1, 1)  # 矩形
-        # cv2.imshow('pixel_measure', frame)
-        # key = cv2.waitKey(1) & 0xFF
-        # if key == ord('\r'):
-        #     pass
-        return True
+        # leftl = (
+        #     left_x - (left[0] / np.int(opt.__dict__['narrow'])),
+        #     left_y - (left[1] / np.int(opt.__dict__['narrow'])))
+        # rightl = (
+        #     right_x - (right[0] / np.int(opt.__dict__['narrow'])),
+        #     right_y - (right[1] / np.int(opt.__dict__['narrow'])))
+        leftl = (left_x, left_y)
+        rightl = (right_x, right_y)
     elif message['msg'] == "Not tracking":
-        # logger.info('\033[1;31m请检查靶标是否在摄像机视线内\033[0m')
-        return False
-    # return leftl, rightl
+        pass
+    return leftl, rightl
 
 
 lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
@@ -88,6 +57,7 @@ def corners_tracking(prev_gray, frame_gray, corners, rtspThrad, left, right):
         logger.info(Error)
         p0 = corners
         p1 = corners
+
     d = abs(corners - p0).reshape(-1, 2).max(-1)
     good = d < 1
     for (x0, y0), (x, y), True_flag in zip(corners.reshape(-1, 2), p1.reshape(-1, 2), good):
@@ -95,6 +65,7 @@ def corners_tracking(prev_gray, frame_gray, corners, rtspThrad, left, right):
             continue
         bias.append([(x - x0), (y - y0)])
         Tracking_Ok.append([x, y])
+
     for i in range(0, len(bias)):
         dis = np.sqrt(math.pow(bias[i][0], 2) + math.pow(bias[i][1], 2))
         distance.append(dis)
@@ -154,20 +125,20 @@ class OpticalFlow(threading.Thread):
             frame = self.rtspThrad.getFrameData()
             frame_gray = self.rtspThrad.getGrayFrameData()
             if frame is None or frame_gray is None:
-                logger.info("未获取到视频数据")
+                logger.warning("未获取到视频数据")
                 time.sleep(3)
                 continue
             if not self.rtspThrad.videoIsNight():  # 白天
-                logger.info("启动白天状态监听")
+                logger.warning("启动白天状态监听")
                 # self.disposeDayEvent()
                 pass
             else:  # 晚上
-                logger.info("启动晚上状态监听")
+                logger.warning("启动晚上状态监听")
                 # self.disposeNightEvent()
                 # self.disposeDayEvent()
                 pass
             # 这里修改的原因是 图片过大会导致跟踪框解析时间过长
-            logger.info("开始处理跟踪框...")
+            logger.warning("开始处理跟踪框...")
             bbox_M = self.bbox_M
             tracker = Tracker(tracker_type='KCF')
             picSize = self.rtspThrad.getFramepicSize()
@@ -185,19 +156,22 @@ class OpticalFlow(threading.Thread):
     '''
         报警算法
     '''
+    tagGetNoneNumber = 0  # 连续未检测到角点帧总数
 
     def disposeDayEvent(self):
         global isAlarm
         # global pushNumber
-        global trackChang
         isInitFirstFrame = False  # 是否初始化了角点
         corners = None
+        nowCorners = None
         old_frame_gray = None
         beginLoopType = self.rtspThrad.videoIsNight()
+        trackChang = 0
         while beginLoopType is self.rtspThrad.videoIsNight() or isAlarm:  # 如果是初始化的时候的状态或者是报警状态的时候不跳出报警循环
+
             # while not self.rtspThrad.videoIsNight() or isAlarm:  # 白天状态循环,当是报警状态的时候不跳出循环
-            run_time = str(time.strftime('%H%M%S'))
-            run_time = int(run_time)
+            # run_time = str(time.strftime('%H%M%S'))
+            # run_time = int(run_time)
             # 事件可以处理的白天 当时报警状态的时候不处理判断
             # if int(opt.__dict__['start_time']) <= run_time <= int(opt.__dict__['end_time']) or isAlarm:
 
@@ -229,8 +203,9 @@ class OpticalFlow(threading.Thread):
             # rectYSize = y2 - y1
             # 设定监控包含框体可以完全移除画面的情况
             # if x1 > - rectXSize and x2 < (xS + rectXSize) and y1 > -rectYSize and y2 < (yS + rectYSize):
-            logger.info("检测框移动距离:%s" % trackChang)
-            if Target_tracking(self.tracker, trackerFrame, self.left, self.right):  # 是否遮挡 or 靶标完全消失
+
+            nowLeft, nowRight = Target_tracking(self.tracker, trackerFrame, self.left, self.right)
+            if nowLeft is not None:  # 是否遮挡 or 靶标完全消失
                 self.pushDeviceError(1)  # 靶标未丢失状态,是正常帧
                 videoIsNight = self.rtspThrad.videoIsNight()
                 if not isInitFirstFrame:
@@ -242,13 +217,22 @@ class OpticalFlow(threading.Thread):
                     isInitFirstFrame = True
                     if not videoIsNight:
                         frame_gray = cv2.equalizeHist(frame_gray)
-                    mean_dis, Tracking_Ok, bias = corners_tracking(old_frame_gray, frame_gray, corners,
-                                                                   self.rtspThrad, self.left, self.right)
+
+                    mean_dis, nowCorners, bias = corners_tracking(old_frame_gray, frame_gray, corners,
+                                                                  self.rtspThrad, self.left, self.right)
 
                     # if (self.isOpenVideo):
-                    logger.info("像素移动距离:%s" % mean_dis)
+
+                    leftl = (
+                        nowLeft[0] - (self.left[0] / np.int(opt.__dict__['narrow'])),
+                        nowLeft[1] - (self.left[1] / np.int(opt.__dict__['narrow'])))
+                    trackChang = np.sqrt(leftl[0] ** 2 + leftl[1] ** 2)  # 位移距离
+                    print(datetime.datetime.now(), "像素移动距离:%s---靶标移动距离:%s" % (mean_dis, trackChang))
+                    logger.info("像素移动距离:%s---靶标移动距离:%s" % (mean_dis, trackChang))
+
                     move = mean_dis / np.float(opt.__dict__['cm_dis'])  # 移动距离比例
                     if move > 1:
+                        self.tagGetNoneNumber = 0
                         logger.error('目标位移超过预定阀值，开始发送报警信息！')
                         logger.error("像素移动距离:" + str(mean_dis))
                         logger.error('位移像素与标定比例:' + str(move))
@@ -275,23 +259,33 @@ class OpticalFlow(threading.Thread):
                         isAlarm = True
                     elif mean_dis == -1 or isAlarm:  # 当前设备未检测到可用的正常的角点
                         if isAlarm:  # 如果是报警状态未检测到角点也发送图片
-                            logger.error('未检测到靶标,当前是报警状态，开始发送报警信息！')
+                            logger.error('未检测到靶标目标点,当前是报警状态，开始发送报警信息！')
                             self.pushWarning(frame)
-                        # else:
-                        # isInitFirstFrame = False
-                        # logger.info('靶标特征点不能正常检测,正准备重新检测特征点...')
+                            self.tagGetNoneNumber = 0
+                        else:  # 遮挡或其他条件可能丢失特征点
+                            if self.tagGetNoneNumber > np.int(opt.__dict__['ErrorFrameNumber']):
+                                isInitFirstFrame = False
+                                logger.warning('未检测到靶标目标点,正准备重新检测特征点...')
+                                self.tagGetNoneNumber = 0
+                            else:
+                                self.tagGetNoneNumber = self.tagGetNoneNumber + 1
+                            pass
                 else:
+                    self.tagGetNoneNumber = 0
+                    nowCorners = None
                     isInitFirstFrame = False
-                    logger.info('未检测到靶标特征点,正准备重新检测特征点...')
+                    logger.warning('未检测到靶标特征点,正准备重新检测特征点...')
             else:
+                self.tagGetNoneNumber = 0
+                nowCorners = None
                 if not isAlarm and trackChang < int(opt.__dict__['push_move_data']):
                     self.pushDeviceError(0)
                 else:  # 如果是报警状态强制转换上报图片
                     if isAlarm:
-                        logger.info('未检测到靶标,当前是报警状态，开始发送报警信息！')
+                        logger.error('未检测到靶标,当前是报警状态，开始发送报警信息！')
                     else:
-                        logger.info('未检测到靶标,靶标可能已经倾倒，开始发送报警信息！')
-                        logger.info("靶标已经移动距离:" +str(trackChang))
+                        logger.error('未检测到靶标,靶标可能已经倾倒，开始发送报警信息！')
+                        logger.error("靶标已经移动距离:" + str(trackChang))
                         isAlarm = True
                     self.pushDeviceError(1)
                     self.pushWarning(frame)
@@ -300,7 +294,36 @@ class OpticalFlow(threading.Thread):
             #     self.pushDeviceError(1)
             #     logger.info("当前不在白天算法处理时间段")
             #     time.sleep(60)  # 当不在事件处理时间段,每分钟处理一次
-        logger.info("监听到白天和黑夜变化,开始重新启动算法...")
+
+            if self.isOpenVideo:
+                if nowLeft is not None:
+                    cv2.rectangle(trackerFrame,
+                                  (int(nowLeft[0]), int(nowLeft[1])),
+                                  (int(nowRight[0]), int(nowRight[1])),
+                                  (255, 0, 0), 1, 1)  # 矩形
+
+                if corners is not None:
+                    for tr in corners.reshape(-1, 2):
+                        cv2.circle(trackerFrame,
+                                   (int(tr[0] / np.int(opt.__dict__['narrow'])),
+                                    int(tr[1] / np.int(opt.__dict__['narrow']))),
+                                   3, (0, 0, 255), 1)  # 原角点
+
+                if nowCorners is not None:
+                    for tr in nowCorners:
+                        cv2.circle(trackerFrame,
+                                   (int(tr[0] / np.int(opt.__dict__['narrow'])),
+                                    int(tr[1] / np.int(opt.__dict__['narrow']))),
+                                   1, (124, 252, 0), -1)  # 现角点
+                else:
+                    cv2.putText(trackerFrame, 'error not tag!!!', (50, 300), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (124, 252,
+                                                                                                             0), 2)
+                    pass
+                cv2.imshow('pixel_measure', trackerFrame)
+                key = cv2.waitKey(1) & 0xFF
+                if key == ord('\r'):
+                    pass
+        logger.warning("监听到白天和黑夜变化,开始重新启动算法...")
         pass
 
     '''
@@ -337,7 +360,7 @@ class OpticalFlow(threading.Thread):
                 time.sleep(1 * 60 * 60)
             else:
                 time.sleep(99 * 99 * 99 * 99 * 99 * 60 * 60)  # 相当于强制停止了
-            logger.info("第" + str(pushNumber) + "次报警发送完毕")
+            logger.warning("第" + str(pushNumber) + "次报警发送完毕")
             pushNumber = pushNumber + 1
         except Exception as Error:
             logger.error('上传图片出现问题：:' + str(Error))
@@ -348,7 +371,7 @@ class OpticalFlow(threading.Thread):
     '''
 
     def pushDeviceError(self, type):
-        if type is 0:  # 异常帧
+        if type is 0:  # 设备异常报警帧
             # if self.wpt is None:
             #     logger.info("检测到设备可能异常遮挡,开始进行区间时间段检测异常量...")
             #     self.wpt = warningPushThread(self.rtspThrad)

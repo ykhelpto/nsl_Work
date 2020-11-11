@@ -17,7 +17,6 @@ def Client_send(data):
             logger.info(Error)
             logger.info('tcp没有连接上，输出上传失败！！')
 
-import struct
 def Client_send_pic_hex(data):
     setdefaulttimeout(3)
     if data != None:

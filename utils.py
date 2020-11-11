@@ -1,6 +1,5 @@
 #-*- coding: UTF-8 -*-
 import time
-import numpy
 import base64
 import os
 from PIL import Image

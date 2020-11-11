@@ -6,11 +6,7 @@
 import time
 import threading
 from loguru import logger  # 日志控件
-from socker import Client_send
-import numpy as np
-import random
 from config import opt
-import cv2
 
 
 class typeRefreshThread(threading.Thread):

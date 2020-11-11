@@ -1,13 +1,12 @@
 # -*- coding: UTF-8 -*-
 '''
-  警告抓捕线程
+    所有报警全部集中在这里
+         监听到异常后有一分钟(可配置)的缓冲时间
 '''
 import time
 import threading
 from loguru import logger  # 日志控件
-from socker import Client_send
 import numpy as np
-import random
 from config import opt
 import cv2
 from new_socket_connection import Socket_Send_Pic
@@ -49,7 +48,7 @@ class warningPushThread(threading.Thread):
                     self.pushPicNumber = self.pushPicNumber + 1
 
                     self.hThread.changHeartType(1)
-                    logger.info('靶标不在摄像机视线内，请检查！')
+                    logger.warning('靶标不在摄像机视线内，请检查！')
                     # data = {'msgType': 1,
                     #         'device': '1',
                     #         'status': 2,
@@ -60,14 +59,14 @@ class warningPushThread(threading.Thread):
                     #     logger.info('Error:' + str(Error))
                 else:
                     if self.pushPicNumber is not 0:  # 还原报警
-                        logger.info("靶标已经还原...")
+                        logger.warning("靶标已经还原...")
                         self.pushWarning()
                         pass
                     self.pushPicNumber = 0
                     self.hThread.changHeartType(0)
             else:
                 if self.pushPicNumber is not 0:  # 还原报警
-                    logger.info("靶标已经还原...")
+                    logger.warning("靶标已经还原...")
                     self.pushWarning()
                     pass
                 self.pushPicNumber = 0
@@ -101,7 +100,7 @@ class warningPushThread(threading.Thread):
             except Exception as Error:
                 logger.error('上传图片出现问题：:' + str(Error))
         else:
-            logger.info('未获取到报警帧,未保存图片数据...')
+            logger.warning('未获取到报警帧,未保存图片数据...')
 
     # 添加正常数
     def addNormal(self):

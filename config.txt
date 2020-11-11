@@ -9,7 +9,7 @@ host=172.19.152.80
 port=33808
 bufsize=56000
 # 先验值
-cm_dis=73.827095
+cm_dis=73.77588
 # 图片存放文件夹名称
 file_path=test
 frame_speed=25
@@ -17,9 +17,9 @@ time_interval=60
 # socket传输一次的字节量
 length_send=56000
 #bbox 
-bbox_lsit=(917, 316, 152, 260)
+bbox_lsit=(860, 370, 130, 242)
 #配置展示帧缩放大小,实际算法处理正常大小
-narrow=1
+narrow=2
 #起始时间和结束时间 废弃
 start_time=000000
 end_time=999999
@@ -47,3 +47,7 @@ Target_change_size=10
 Alarm_All_Tag_number=60
 #报警上报图片时长   单位 分钟
 Alarm_Push_Time=30
+#是否启动视频展示
+isOpenVideo=1
+#靶标变化阀值  非正常帧合集总数
+ErrorFrameNumber=10

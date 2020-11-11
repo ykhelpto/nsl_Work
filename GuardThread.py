@@ -1,13 +1,7 @@
 # -*- coding: UTF-8 -*-
 import threading
 import time
-import os
-from socker import Client_send
-from config import opt
-import numpy as np
 from loguru import logger  # 日志控件
-import os
-import sys
 from new_optical_flow import OpticalFlow
 from Send_HeartBeat import Send_heatbeat
 
@@ -20,8 +14,9 @@ class guardTherad(threading.Thread):
     def __init__(self,
                  opticalFlowThreadName,
                  SendHeatbeatThreadName,
-                 SendHeatbeatThread,
                  rtspThrad,
+                 SendHeatbeatThread,
+                 rtspToolThrad,
                  ip_camera_url,
                  left,
                  right,
@@ -30,6 +25,7 @@ class guardTherad(threading.Thread):
         self.OTN = opticalFlowThreadName
         self.SHTN = SendHeatbeatThreadName
         self.th2 = SendHeatbeatThread
+        self.rtspToolThrad = rtspToolThrad
         self.rtspThrad = rtspThrad  # 添加数据处理线程
         self.ip_camera_url = ip_camera_url
         self.left = left
@@ -54,7 +50,7 @@ class guardTherad(threading.Thread):
                     pass
             if not isOTN:  # 线程 opticalFlowThread停止运行了
                 logger.error("算法线程停止运行了,正在准备恢复")
-                th1 = OpticalFlow(self.rtspThrad,
+                th1 = OpticalFlow(self.rtspToolThrad,
                                   self.th2,
                                   self.ip_camera_url,
                                   self.left,
@@ -66,11 +62,9 @@ class guardTherad(threading.Thread):
                 pass
             if not isSHTN:  # 线程 SendHeatbeat
                 logger.error("心跳线程停止运行了,正在准备恢复")
-                th2 = Send_heatbeat()  # 心跳
+                th2 = Send_heatbeat(self.rtspThrad)  # 心跳
                 th2.start()
                 self.SHTN = th2.getName()
                 self.th2 = th2
                 pass
-        logger.error("程序崩溃,守护线程停止")
-
         pass

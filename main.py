@@ -1,4 +1,6 @@
 # -*- coding: UTF-8 -*-
+import sys
+
 import cv2
 import threading
 import os
@@ -15,8 +17,6 @@ from config import opt
 from loguru import logger  # 日志控件
 from GuardThread import guardTherad  # 线程守护
 from rtsp_frame_tool import RtspFrameTool  # 线程守护
-
-import time
 
 isChangeCF = False
 
@@ -141,21 +141,33 @@ if __name__ == '__main__':
                 key = line.split('=')[-1].split('\n')[0]
                 item = {name: key}
                 opt._parse(item)
+
     Mkdir(opt.file_path)  # 构建图片存储文件夹
     Mkdir(opt.log_path)  # 构建日志存储文件夹
 
     # 日志配置
+    logger.remove(handler_id=None)  # 清除之前的设置 关闭默认输出的控制台
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     log_file_path = os.path.join(BASE_DIR, opt.log_path + '\\file_{time}.log')
     err_log_file_path = os.path.join(BASE_DIR, opt.log_path + '\\error_file_{time}.log')
-    logger.add(log_file_path, rotation="10 MB", compression="zip", encoding='utf-8', enqueue=True)
-    logger.add(err_log_file_path, rotation="10 MB", compression="zip", encoding='utf-8', level='ERROR', enqueue=True)
+    logger.add(sys.stderr, level="WARNING")
+    logger.add(log_file_path, rotation="10 MB", compression="zip", encoding='utf-8', enqueue=True, retention="30 days")
+    logger.add(
+        err_log_file_path,
+        rotation="10 MB",
+        compression="zip",
+        encoding='utf-8',
+        level='ERROR',
+        enqueue=True,
+        retention="2 months")
 
-    ip_camera_url = BaseRTSPURL % (opt.__dict__['user'], opt.__dict__['pwd'], opt.__dict__['ip'], opt.__dict__['channel'])
+    ip_camera_url = BaseRTSPURL % (
+    opt.__dict__['user'], opt.__dict__['pwd'], opt.__dict__['ip'], opt.__dict__['channel'])
     # ip_camera_url = "C:\\Users\\zzd\\Desktop\\11.3\\video\\d_c_n.mp4"
-    # ip_camera_url = "C:\\Users\\zzd\\Desktop\\10.30\\testvideo\\d2.mp4"
+    # ip_camera_url = "C:\\Users\\zzd\\Desktop\\10.30\\testvideo\\d1.mp4"
+    # ip_camera_url = "C:\\Users\\zzd\\Desktop\\11.4\\video\\172.19.152.166_01_20201102174415364.mp4"
     # ip_camera_url = "1cm.mp4"
-    logger.info("启动连接:" + ip_camera_url)
+    logger.warning("启动连接:" + ip_camera_url)
     rtspThrad = RtspConnection(ip_camera_url, np.int(opt.__dict__['narrow']))  # 摄像头数据
     rtspThrad.start()
     initSate = False
@@ -181,7 +193,7 @@ if __name__ == '__main__':
             # global isChangeCF
 
             if isChangeCF:
-                logger.info("请确认靶标内角点正常,<<确定焦点在弹出窗口后>>,按回车键结束")
+                logger.warning("请确认靶标内角点正常,<<确定焦点在弹出窗口后>>,按回车键结束")
                 showTestWindow(rtspThrad)
                 inputStr = input('请输入实际距离: ')
                 pm = PixelMeasure(rtspThrad)  # 获取像素值
@@ -197,21 +209,27 @@ if __name__ == '__main__':
                            bbox[2] * np.int(opt.__dict__['narrow']), bbox[3] * np.int(opt.__dict__['narrow']))  # 获取实际框体
                 saveChangeConfig('bbox_lsit', nowBbox)
                 bbox_M = nowBbox
-                inputStr = raw_input('是否保存实时移动日志,会消耗设备性能,建议正式模式下不要开启(y/n)?: ')
-                if inputStr == 'y' or inputStr == 'Y':
-                    logger.info("已经开启实时移动日志保存")
-                    isOpenVideo = True
-            # logger.info(bbox_M)
+                # inputStr = raw_input('是否启动视频实时展示,会消耗设备性能,建议正式模式下不要开启(y/n)?: ')
+                # if inputStr == 'y' or inputStr == 'Y':
+                #     logger.warning("已经启动视频实时展示")
+                #     isOpenVideo = True
+
             (left_x, left_y, w, h) = bbox_M
             left = (left_x, left_y)
             right = (left_x + w, left_y + h)
+            if np.int(opt.__dict__['isOpenVideo']) is 1:
+                isOpenVideo = True
+            else:
+                isOpenVideo = False
+            logger.warning("检测靶标区域:" + str(bbox_M))
             initSate = True
 
     th0 = RtspFrameTool(rtspThrad)  # 视频流工具线程可以把耗时操作放在这里面
-    th2 = Send_heatbeat(th0)  # 心跳
+    th2 = Send_heatbeat(rtspThrad)  # 心跳
     th1 = OpticalFlow(th0, th2, ip_camera_url, left, right, isOpenVideo, bbox_M)  # 算法
 
-    th3 = guardTherad(th1.getName(), th2.getName(), th2, th0, ip_camera_url, left, right, isOpenVideo, bbox_M)
+    th3 = guardTherad(th1.getName(), th2.getName(), rtspThrad, th2, th0, ip_camera_url, left, right, isOpenVideo,
+                      bbox_M)
 
     th0.start()
     th1.start()
