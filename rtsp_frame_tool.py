@@ -45,17 +45,20 @@ class RtspFrameTool(threading.Thread):
                     if self.isNight:  # 如果是晚上状态 切换到白天
                         self.trt.refreshLoop()
                         self.isNight = False
+                        self.isNightType = 1
                         logger.warning("切换监听状态晚上>>>白天,启动视频缓冲请稍后...")
 
                 else:
                     if not self.isNight:  # 如果是白天状态 切换到晚上
                         if self.isNightType is -1:  # 初始化的时候不进行监听
                             logger.warning("正在启动晚上状态请稍后...")
+                            self.isNightType = 1
                             self.isNight = True
                             pass
                         else:
                             self.trt.refreshLoop()
                             self.isNight = True
+                            self.isNightType = 1
                             logger.info("切换监听状态白天>>>晚上,启动视频缓冲请稍后...")
 
                 if self.trt.getRefreshISLoop():  # 是否在等待视频帧稳定中

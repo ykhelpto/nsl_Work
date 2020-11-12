@@ -150,7 +150,12 @@ class OpticalFlow(threading.Thread):
             tracker.initWorking(trackerFrame, narrowBbox)
             # print(bbox_M)
             self.tracker = tracker
-            self.disposeDayEvent()
+            try:
+                self.disposeDayEvent()
+            except Exception as Error:#当线程异常终止的时候要释放窗口,不然自动恢复的时候会导致窗口无法启动
+                cv2.destroyAllWindows()
+                logger.error(Error)
+                raise RuntimeError('算法线程终止!!')
         logger.error("算法线程异常结束")
 
     '''
@@ -720,7 +725,12 @@ class OpticalFlow(threading.Thread):
                 cv2.imwrite(opt.__dict__['file_path'] + '/' + 'gray_2.jpg', frame_gray)  # 白天算法对齐后的彩色帧
             feature_params = dict(maxCorners=100, qualityLevel=0.3, minDistance=7, blockSize=7)
             p = cv2.goodFeaturesToTrack(frame_gray, mask=None, **feature_params)
-            corners = self.Getcorners(frame, left, right, p)
+
+            if p is not None:
+                corners = self.Getcorners(frame, left, right, p)
+            else:
+                return None, None
+
             if corners.shape == (0,):
                 return None, None
             else:
