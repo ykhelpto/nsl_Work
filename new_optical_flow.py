@@ -723,7 +723,7 @@ class OpticalFlow(threading.Thread):
             if not videoIsNight:
                 frame_gray = cv2.equalizeHist(frame_gray)
                 cv2.imwrite(opt.__dict__['file_path'] + '/' + 'gray_2.jpg', frame_gray)  # 白天算法对齐后的彩色帧
-            feature_params = dict(maxCorners=100, qualityLevel=0.3, minDistance=7, blockSize=7)
+            feature_params = dict(maxCorners=1000, qualityLevel=0.3, minDistance=7, blockSize=7)
             p = cv2.goodFeaturesToTrack(frame_gray, mask=None, **feature_params)
 
             if p is not None:
