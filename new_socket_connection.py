@@ -57,19 +57,20 @@ class Socket_Send_Pic(threading.Thread):
             every_data_len = (int(opt.__dict__['length_send']) - 14)
             logger.info('分%d次完成，每一次发送%d个字符' % (total_number, every_data_len))
             logger.info('-----------------------------------------------------')
-            data = {'msgType': 2,
-                    'sequence': self.seq,
-                    'device': '1',
-                    'time': self.time_stamp
-                    }
-            logger.info(data)
-            data_send = json.dumps(data)
-            self.tcpClient.send(data_send.encode())
-            # logger.info('-----------------------------')
-            # logger.info(data_send)
-            time.sleep(0.5)
 
             for i in range(int(total_number)):
+                data = {'msgType': 2,
+                        'sequence': self.seq,
+                        'device': '1',
+                        'time': self.time_stamp
+                        }
+                logger.info(data)
+                data_send = json.dumps(data)
+                self.tcpClient.send(data_send.encode())
+                # logger.info('-----------------------------')
+                # logger.info(data_send)
+                time.sleep(0.5)
+
                 if i < (total_number - 1):
                     # 2.当前包大小
                     # logger.info(int(opt.__dict__['length_send'])-14, hex(int(opt.__dict__['length_send'])-14), str(hex(int(opt.__dict__['length_send'])-14))[2:])
@@ -130,7 +131,7 @@ class Socket_Send_Pic(threading.Thread):
                     # logger.info(send_data)
                     self.tcpClient.send(send_data)
                     time.sleep(0.5)
-            logger.info("发送完毕")
+            logger.warning("图片发送完毕")
             self.tcpClient.close()
         # except Exception as Error:
         #     self.tcpClient.close()
