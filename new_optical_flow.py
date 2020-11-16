@@ -43,7 +43,7 @@ def Target_tracking(tracker, frame, left, right):
     return leftl, rightl
 
 
-lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+lk_params = dict(winSize=(7,7), maxLevel=10, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
 
 def corners_tracking(prev_gray, frame_gray, corners, rtspThrad, left, right):
@@ -723,8 +723,22 @@ class OpticalFlow(threading.Thread):
             if not videoIsNight:
                 frame_gray = cv2.equalizeHist(frame_gray)
                 cv2.imwrite(opt.__dict__['file_path'] + '/' + 'gray_2.jpg', frame_gray)  # 白天算法对齐后的彩色帧
-            feature_params = dict(maxCorners=1000, qualityLevel=0.3, minDistance=7, blockSize=7)
-            p = cv2.goodFeaturesToTrack(frame_gray, mask=None, **feature_params)
+            '''
+                说明:
+                    maxCorners:检测最多的优质角点数 0:不做控制
+                    qualityLevel:认定追踪角点数的质量
+                    minDistance:角点最小占用像素,用于忽略相邻两个距离值比较小的角点
+                    blockSize:角点占用像素块大小
+            '''
+            feature_params = dict(maxCorners=0
+                                  , qualityLevel=0.3
+                                  , minDistance=7
+                                  , blockSize=7
+                                  )
+            MyMask = np.zeros_like(frame_gray)
+            (x, y, w, h) = self.bbox_M
+            MyMask[y:y + h, x:x + w] = 255
+            p = cv2.goodFeaturesToTrack(frame_gray, mask=MyMask, **feature_params)
 
             if p is not None:
                 corners = self.Getcorners(frame, left, right, p)
