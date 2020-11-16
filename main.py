@@ -24,7 +24,7 @@ lk_params = dict(winSize=(15, 15),
                  maxLevel=2,
                  criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
-feature_params = dict(maxCorners=500,
+feature_params = dict(maxCorners=1000,
                       qualityLevel=0.3,
                       minDistance=7,
                       blockSize=7)
@@ -37,17 +37,17 @@ def Mkdir(file_path):
         logger.info(file_path + '文件夹创建完毕')
 
 
-def get_input(q):
+def get_input(qr):
     global isChangeCF
-    inputStr = raw_input('是否需要修改配置(y/n)?: ')
-    if inputStr == 'y' or inputStr == 'Y':
+    input_Str = raw_input('是否需要修改配置(y/n)?: ')
+    if input_Str == 'y' or input_Str == 'Y':
         isChangeCF = True
-    q.put(1)
+    qr.put(1)
 
 
-def wait(q):
+def wait(qrs):
     try:
-        q.get(timeout=5)
+        qrs.get(timeout=5)
     except queue.Empty:
         pass
 
@@ -61,29 +61,30 @@ def saveChangeConfig(configName, newKey):
     file_data = ""
     with io.open('config.txt', 'r', encoding='utf-8') as f:
         lines = f.readlines()
-        for line in lines:
-            if line.startswith('#'):
+        for sline in lines:
+            if sline.startswith('#'):
                 pass
             else:
-                name = line.split('=')[0]
-                if configName == name:
-                    key = line.split('=')[-1].split('\n')[0]
-                    line = line.replace(key, str(newKey))
-            file_data += line
+                sname = sline.split('=')[0]
+                if configName == sname:
+                    skey = sline.split('=')[-1].split('\n')[0]
+                    sline = sline.replace(skey, str(newKey))
+            file_data += sline
     with io.open('config.txt', "w", encoding="utf-8") as f:
         f.write(file_data)
         f.close()
 
 
 # 展示视频角点情况
-def showTestWindow(rtspThrad):
+def showTestWindow(srtspThrad):
     track_len = 100
     detect_interval = 5
     tracks = []
     frame_idx = 0
     isShowWindow = True
     while isShowWindow:
-        frame_gray = rtspThrad.getGrayFrameData()
+        window_frame = srtspThrad.getFrameData()
+        frame_gray = srtspThrad.getGrayFrameData()
         if frame_gray is None:
             continue
         if frame_idx % detect_interval == 0:  # 每5帧检测一次特征点:
@@ -118,13 +119,13 @@ def showTestWindow(rtspThrad):
                 if len(tr) > track_len:
                     del tr[0]
                 new_tracks.append(tr)
-                cv2.circle(frame, (x, y), 2, (0, 255, 0), -1)
+                cv2.circle(window_frame, (x, y), 2, (0, 255, 0), -1)
             tracks = new_tracks
-            cv2.polylines(frame, [np.int32(tr) for tr in tracks], False, (0, 255, 0))  # 以上一振角点为初始点，当前帧跟踪到的点为终点划线
+            cv2.polylines(window_frame, [np.int32(tr) for tr in tracks], False, (0, 255, 0))  # 以上一振角点为初始点，当前帧跟踪到的点为终点划线
             # draw_str(vis, (20, 20), 'track count: %d' % len(self.tracks))
         cv2.namedWindow('window', cv2.WINDOW_NORMAL)
         cv2.resizeWindow('window', 1500, 800)
-        cv2.imshow('window', frame)
+        cv2.imshow('window', window_frame)
         key = cv2.waitKey(1) & 0xFF
         if key == ord('\r'):
             isShowWindow = False
