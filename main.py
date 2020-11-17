@@ -16,7 +16,8 @@ from pixel_measure import PixelMeasure
 from config import opt
 from loguru import logger  # 日志控件
 from GuardThread import guardTherad  # 线程守护
-from rtsp_frame_tool import RtspFrameTool  # 线程守护
+from rtsp_frame_tool_frame import RtspFrameToolFrame  # 视频帧处理线程2
+from rtsp_frame_tool import RtspFrameTool  # 视频帧处理线程
 
 isChangeCF = False
 
@@ -84,7 +85,7 @@ def showTestWindow(srtspThrad):
     isShowWindow = True
     while isShowWindow:
         window_frame = srtspThrad.getFrameData()
-        frame_gray = srtspThrad.getGrayFrameData()
+        frame_gray = cv2.cvtColor(window_frame, cv2.COLOR_BGR2GRAY)
         if frame_gray is None:
             continue
         if frame_idx % detect_interval == 0:  # 每5帧检测一次特征点:
@@ -163,10 +164,10 @@ if __name__ == '__main__':
         retention="2 months")
 
     ip_camera_url = BaseRTSPURL % (
-    opt.__dict__['user'], opt.__dict__['pwd'], opt.__dict__['ip'], opt.__dict__['channel'])
+        opt.__dict__['user'], opt.__dict__['pwd'], opt.__dict__['ip'], opt.__dict__['channel'])
     # ip_camera_url = "C:\\Users\\zzd\\Desktop\\11.3\\video\\d_c_n.mp4"
     # ip_camera_url = "C:\\Users\\zzd\\Desktop\\10.30\\testvideo\\d1.mp4"
-    # ip_camera_url = "C:\\Users\\zzd\\Desktop\\11.4\\video\\172.19.152.166_01_20201102174415364.mp4"
+    # ip_camera_url = "C:\\Users\\zzd\\Desktop\\video\\2020-11-14迫龙沟\\192.168.10.101_01_20201114163118173_1(QD).mp4"
     # ip_camera_url = "1cm.mp4"
     logger.warning("启动连接:" + ip_camera_url)
     rtspThrad = RtspConnection(ip_camera_url, np.int(opt.__dict__['narrow']))  # 摄像头数据
@@ -225,18 +226,21 @@ if __name__ == '__main__':
             logger.warning("检测靶标区域:" + str(bbox_M))
             initSate = True
 
-    th0 = RtspFrameTool(rtspThrad)  # 视频流工具线程可以把耗时操作放在这里面
+    th00 = RtspFrameToolFrame(rtspThrad)  # 视频流工具线程可以把耗时操作放在这里面
+    th0 = RtspFrameTool(th00)  # 视频流工具线程可以把耗时操作放在这里面
     th2 = Send_heatbeat(rtspThrad)  # 心跳
     th1 = OpticalFlow(th0, th2, ip_camera_url, left, right, isOpenVideo, bbox_M)  # 算法
 
     th3 = guardTherad(th1.getName(), th2.getName(), rtspThrad, th2, th0, ip_camera_url, left, right, isOpenVideo,
                       bbox_M)
 
+    th00.start()
     th0.start()
     th1.start()
     th2.start()  # 开启两个线程
     th3.start()
 
+    th00.join()
     th0.join()
     th1.join()
     th2.join()

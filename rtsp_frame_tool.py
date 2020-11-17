@@ -26,8 +26,8 @@ class RtspFrameTool(threading.Thread):
     isNight = False  # 默认是白天数据
     isNightType = -1  # 默认是启动-1状态
 
-    def __init__(self, rtspThrad):
-        self.rtspThrad = rtspThrad
+    def __init__(self, rtspFrameToolFrame):
+        self.rtspFrameToolFrame = rtspFrameToolFrame
         self.lock = threading.Lock()
         self.trt = typeRefreshThread()
         self.trt.start()
@@ -36,10 +36,10 @@ class RtspFrameTool(threading.Thread):
     def run(self):
         while self.isRunThread:
 
-            takeHSVFrame = self.rtspThrad.gettrackerHSVFrameData()
+            takeHSVFrame = self.rtspFrameToolFrame.gettrackerHSVFrameData()
             if takeHSVFrame is not None:
-                self.picSize = self.rtspThrad.getFramepicSize()
-                self.actualSize = self.rtspThrad.getFrameActualpicSize()
+                self.picSize = self.rtspFrameToolFrame.getFramepicSize()
+                self.actualSize = self.rtspFrameToolFrame.getFrameActualpicSize()
                 # frame4 = nowFrame.copy()
                 if self.findcolor(takeHSVFrame) is 0:
                     if self.isNight:  # 如果是晚上状态 切换到白天
@@ -81,13 +81,13 @@ class RtspFrameTool(threading.Thread):
                     # self.trackerFrame = cv2.resize(frame3, self.picSize)
 
                     # frame0 = nowFrame.copy()
-                    self.nowRGBFrame = self.rtspThrad.getFrameData()
+                    self.nowRGBFrame = self.rtspFrameToolFrame.getFrameData()
                     # frame1 = nowFrame.copy()
-                    self.GrayFrame = self.rtspThrad.getGrayFrameData()
+                    self.GrayFrame = self.rtspFrameToolFrame.getGrayFrameData()
                     # frame2 = nowFrame.copy()
                     # self.HSVFrame = cv2.cvtColor(frame2, cv2.COLOR_BGR2HSV)
                     # frame3 = nowFrame.copy()
-                    self.trackerFrame = self.rtspThrad.getTrackerFrameData()
+                    self.trackerFrame = self.rtspFrameToolFrame.getTrackerFrameData()
                     self.lock.release()
 
                     pass

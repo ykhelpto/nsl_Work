@@ -13,9 +13,9 @@ from loguru import logger  # 日志控件
 class RtspConnection(threading.Thread):
     isRunThread = True
     nowRGBFrame = None
-    GrayFrame = None
-    trackerFrame = None
-    trackerHSVFrame = None
+    # GrayFrame = None
+    # trackerFrame = None
+    # trackerHSVFrame = None
     picSize = 0
     actualSize = 0
     isNight = 0
@@ -43,29 +43,28 @@ class RtspConnection(threading.Thread):
                 ret, frame = self.cap.read()
                 if ret:  # 将帧数据单独放入队列中的第一位,保证缓存中的帧是最新帧
                     if frame is None:
-                        self.lock.acquire()
                         self.nowRGBFrame = None
-                        self.GrayFrame = None
-                        self.trackerFrame = None
-                        self.trackerHSVFrame = None
-                        self.lock.release()
+                        # self.lock.acquire()
+                        # self.GrayFrame = None
+                        # self.trackerFrame = None
+                        # self.trackerHSVFrame = None
+                        # self.lock.release()
                         continue
-                    self.lock.acquire()
                     self.nowRGBFrame = frame
-                    self.GrayFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    self.trackerFrame = cv2.resize(frame, self.picSize)
-                    self.trackerHSVFrame = cv2.cvtColor(self.trackerFrame, cv2.COLOR_BGR2HSV)
-                    self.lock.release()
+                    # self.lock.acquire()
+                    # self.GrayFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    # self.trackerFrame = cv2.resize(frame, self.picSize)
+                    # self.trackerHSVFrame = cv2.cvtColor(self.trackerFrame, cv2.COLOR_BGR2HSV)
+                    # self.lock.release()
                 else:  # 在内存爆满后,多次溢出状态下会导致rtsp流中断需再次连接
                     logger.error("视频流帧拉取失败,正在重新连接...")
-                    self.lock.acquire()
                     self.nowRGBFrame = None
-                    self.GrayFrame = None
-                    self.trackerFrame = None
-                    self.trackerHSVFrame = None
-                    self.lock.release()
+                    # self.lock.acquire()
+                    # self.GrayFrame = None
+                    # self.trackerFrame = None
+                    # self.trackerHSVFrame = None
+                    # self.lock.release()
                     time.sleep(3)
-
                     self.cap = cv2.VideoCapture(self.ip_camera_url)
                     width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # 获取视频的宽度
                     height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))  # 获取视频的高度
@@ -88,12 +87,12 @@ class RtspConnection(threading.Thread):
                 except Exception as Error:
                     pass
                 logger.error("视频流启动失败,正在重新连接...")
-                self.lock.acquire()
                 self.nowRGBFrame = None
-                self.GrayFrame = None
-                self.trackerFrame = None
-                self.trackerHSVFrame = None
-                self.lock.release()
+                # self.lock.acquire()
+                # self.GrayFrame = None
+                # self.trackerFrame = None
+                # self.trackerHSVFrame = None
+                # self.lock.release()
                 time.sleep(3)
 
                 self.cap = cv2.VideoCapture(self.ip_camera_url)
@@ -129,14 +128,14 @@ class RtspConnection(threading.Thread):
     获取最新的Gray图片
     '''
 
-    def getGrayFrameData(self):
-        return self.GrayFrame
-
-    def getTrackerFrameData(self):
-        return self.trackerFrame
-
-    def gettrackerHSVFrameData(self):
-        return self.trackerHSVFrame
+    # def getGrayFrameData(self):
+    #     return self.GrayFrame
+    #
+    # def getTrackerFrameData(self):
+    #     return self.trackerFrame
+    #
+    # def gettrackerHSVFrameData(self):
+    #     return self.trackerHSVFrame
 
     # 注意这里是建议展示缩放尺寸比例
     def getFramepicSize(self):
